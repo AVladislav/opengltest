@@ -1,0 +1,13 @@
+*.sdf
+*.obj
+*.suo
+*.tlog
+*.ilk
+*.pdb
+*.lastbuildstate
+*.res
+*.idb
+*.pch
+*.log
+/Debug/*.*
+/Release/*.*
