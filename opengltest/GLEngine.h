@@ -11,6 +11,14 @@ public:
 
 	void Init(HDC hdc);
 	void Shutdown();	
+	void Draw();
+	void StartThread();
+	void Run();
+
+protected:
+	void ResizeScene(UINT width, UINT height);
+	void InitGL();
+
 private:
 	HGLRC m_hglrc;
 	HDC m_hdc;

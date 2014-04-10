@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "opengltest.h"
+#include "GLEngine.h"
 
 #define MAX_LOADSTRING 100
 
@@ -15,7 +16,7 @@ TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
-
+HWND g_hWnd;
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPTSTR    lpCmdLine,
@@ -40,16 +41,28 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_OPENGLTEST));
-
+	GLEngine glEngine;
+	HDC hdc = GetDC(g_hWnd);
+	glEngine.Init(hdc);
 	// Main message loop:
-	while (true)
+	BOOL done(FALSE);
+	glEngine.StartThread();
+	while (!done)
 	{
-		if(GetMessage(&msg, NULL, 0, 0))
+		if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);		
-		}
+			if (msg.message==WM_QUIT)				// Have We Received A Quit Message?
+			{
+				done=TRUE;							// If So done=TRUE
+			}
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}			
 	}
+
+	ReleaseDC(g_hWnd, hdc);
 
 	return (int) msg.wParam;
 }
@@ -63,23 +76,20 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 //
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
-	WNDCLASSEX wcex;
+	WNDCLASS wc;
 
-	wcex.cbSize = sizeof(WNDCLASSEX);
+	wc.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC;	// Redraw On Size, And Own DC For Window.
+	wc.lpfnWndProc		= (WNDPROC) WndProc;					// WndProc Handles Messages
+	wc.cbClsExtra		= 0;									// No Extra Window Data
+	wc.cbWndExtra		= 0;									// No Extra Window Data
+	wc.hInstance		= hInstance;							// Set The Instance
+	wc.hIcon			= LoadIcon(NULL, IDI_WINLOGO);			// Load The Default Icon
+	wc.hCursor			= LoadCursor(NULL, IDC_ARROW);			// Load The Arrow Pointer
+	wc.hbrBackground	= NULL;									// No Background Required For GL
+	wc.lpszMenuName		= NULL;									// We Don't Want A Menu
+	wc.lpszClassName	= L"OpenGL";								// Set The Class Name
 
-	wcex.style			= CS_HREDRAW | CS_VREDRAW;
-	wcex.lpfnWndProc	= WndProc;
-	wcex.cbClsExtra		= 0;
-	wcex.cbWndExtra		= 0;
-	wcex.hInstance		= hInstance;
-	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_OPENGLTEST));
-	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
-	wcex.hbrBackground	= (HBRUSH)(COLOR_WINDOW+1);
-	wcex.lpszMenuName	= MAKEINTRESOURCE(IDC_OPENGLTEST);
-	wcex.lpszClassName	= szWindowClass;
-	wcex.hIconSm		= LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
-	return RegisterClassEx(&wcex);
+	return RegisterClass(&wc);
 }
 
 //
@@ -94,19 +104,31 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   HWND hWnd;
 
    hInst = hInstance; // Store instance handle in our global variable
+   DWORD		dwExStyle;				// Window Extended Style
+   DWORD		dwStyle;				// Window Style
+   
+   dwExStyle=WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;			// Window Extended Style
+   dwStyle=WS_OVERLAPPEDWINDOW;
+   
+   RECT		WindowRect;				// Grabs Rectangle Upper Left / Lower Right Values
+   WindowRect.left=(long)0;			// Set Left Value To 0
+   WindowRect.right=(long)800;		// Set Right Value To Requested Width
+   WindowRect.top=(long)0;				// Set Top Value To 0
+   WindowRect.bottom=(long)600;		// Set Bottom Value To Requested Height
+   
+   AdjustWindowRectEx(&WindowRect, dwStyle, FALSE, dwExStyle);		// Adjust Window To True Requested Size
 
-   hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+   g_hWnd = CreateWindowEx(dwExStyle, L"OpenGL", szTitle, dwStyle,
+      0, 0, 800, 600, NULL, NULL, hInstance, NULL);
 
-   if (!hWnd)
+   if (!g_hWnd)
    {
       return FALSE;
    }
 
-   ShowWindow(hWnd, nCmdShow);   
+   ShowWindow(g_hWnd, nCmdShow);   
 
    return TRUE;
 }
@@ -123,17 +145,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	int wmId, wmEvent;
-	PAINTSTRUCT ps;
-	HDC hdc;
-
 	switch (message)
 	{	
-	case WM_DESTROY:
+	case WM_CLOSE:
 		PostQuitMessage(0);
-		break;
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
+		break;	
 	}
-	return 0;
+
+	return DefWindowProc(hWnd, message, wParam, lParam);
 }
