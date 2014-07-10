@@ -10,6 +10,7 @@ public:
 	~GLEngine();
 
 	void Init(HDC hdc);
+	void InitTextures();
 	void Shutdown();	
 	void Draw();
 	void StartThread();
@@ -22,4 +23,5 @@ protected:
 private:
 	HGLRC m_hglrc;
 	HDC m_hdc;
+	GLuint      texture[1]; 
 };

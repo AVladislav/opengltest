@@ -59,7 +59,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
-		}			
+		}
+		else
+			Sleep(100);
 	}
 
 	ReleaseDC(g_hWnd, hdc);
@@ -150,6 +152,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CLOSE:
 		PostQuitMessage(0);
 		break;	
+	case WM_PAINT:
+		break;
 	}
 
 	return DefWindowProc(hWnd, message, wParam, lParam);

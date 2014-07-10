@@ -56,8 +56,9 @@ void GLEngine::Init(HDC hdc)
 	if(!wglMakeCurrent(hdc, m_hglrc))
 		BOOST_LOG_TRIVIAL(error) << "Error wglMakeCurrent: " << __LINE__;
 
-	ResizeScene(800, 600);
+	ResizeScene(800, 600);	
 	InitGL();
+	InitTextures();
 }
 
 void GLEngine::Shutdown()
@@ -75,6 +76,7 @@ void GLEngine::ResizeScene( UINT width, UINT height )
 	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
 	glLoadIdentity();									// Reset The Projection Matrix
 
+	//glOrtho(0,2,2,0,-1,1);
 	// Calculate The Aspect Ratio Of The Window
 	gluPerspective(45.0f,(GLfloat)width/(GLfloat)height,0.1f,100.0f);
 
@@ -85,21 +87,41 @@ void GLEngine::ResizeScene( UINT width, UINT height )
 void GLEngine::Draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// Clear Screen And Depth Buffer
-	glLoadIdentity();									// Reset The Current Modelview Matrix
-	glTranslatef(-1.5f,0.0f,-6.0f);						// Move Left 1.5 Units And Into The Screen 6.0
-	glBegin(GL_TRIANGLES);								// Drawing Using Triangles
-	glColor3f(1,0,0);
-	glVertex3f( 0.0f, 1.0f, 0.0f);					// Top
-	glColor3f(0,1,0);
-	glVertex3f(-1.0f,-1.0f, 0.0f);					// Bottom Left
-	glVertex3f( 1.0f,-1.0f, 0.0f);					// Bottom Right
-	glEnd();											// Finished Drawing The Triangle
-	glTranslatef(3.0f,0.0f,0.0f);						// Move Right 3 Units
-	glBegin(GL_QUADS);									// Draw A Quad
-	glVertex3f(-1.0f, 1.0f, 0.0f);					// Top Left
-	glVertex3f( 1.0f, 1.0f, 0.0f);					// Top Right
-	glVertex3f( 1.0f,-1.0f, 0.0f);					// Bottom Right
-	glVertex3f(-1.0f,-1.0f, 0.0f);					// Bottom Left
+	glLoadIdentity();									// Reset The Current Modelview Matsrix
+	glTranslatef(-1.f,0.0f,-6.f);						// Move Left 1.5 Units And Into The Screen 6.0
+	static GLfloat angle = 0.0;
+	glRotatef(angle, 1.0f, 1.0f, 1.0f);
+	angle+=1.0f;
+	glBindTexture(GL_TEXTURE_2D, texture[0]);
+	glBegin(GL_TRIANGLES);
+	glTexCoord2f(0.0f,0.0f);
+	glVertex3f( 0.0f, 1.0f, 0.0f);
+	glTexCoord2f(0.0f,1.0f);
+	glVertex3f(-1.0f,-1.0f, 1.0f);
+	glTexCoord2f(1.0f,0.0f);
+	glVertex3f( 1.0f,-1.0f, 1.0f);
+
+	glTexCoord2f(1.0f,0.0f);
+	glVertex3f( 0.0f, 1.0f, 0.0f); 
+	glTexCoord2f(1.0f,1.0f);
+	glVertex3f( 1.0f,-1.0f, 1.0f); 
+	glTexCoord2f(0.0f,0.0f);
+	glVertex3f( 1.0f,-1.0f, -1.0f);
+
+	glTexCoord2f(0.0f,1.0f);
+	glVertex3f( 0.0f, 1.0f, 0.0f); 
+	glTexCoord2f(0.0f,0.0f);
+	glVertex3f( 1.0f,-1.0f, -1.0f);
+	glTexCoord2f(1.0f,1.0f);
+	glVertex3f(-1.0f,-1.0f, -1.0f);
+
+	glTexCoord2f(1.0f,1.0f);
+	glVertex3f( 0.0f, 1.0f, 0.0f); 
+	glTexCoord2f(0.0f,1.0f);
+	glVertex3f(-1.0f,-1.0f,-1.0f); 
+	glTexCoord2f(0.0f,0.0f);
+	glVertex3f(-1.0f,-1.0f, 1.0f); 
+
 	glEnd();											// Done Drawing The Quad
 	SwapBuffers(m_hdc);
 	DWORD err = GetLastError();
@@ -107,6 +129,7 @@ void GLEngine::Draw()
 
 void GLEngine::InitGL()
 {
+	glEnable(GL_TEXTURE_2D);
 	glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
 	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);				// Black Background
 	glClearDepth(1.0f);									// Depth Buffer Setup
@@ -132,6 +155,16 @@ void GLEngine::Run()
 	{
 		wglMakeCurrent(m_hdc, m_hglrc);
 		Draw();
-		Sleep(100);
+		Sleep(10);
 	}
+}
+
+void GLEngine::InitTextures()
+{	
+	glGenTextures(1, &texture[0]);
+	glBindTexture(GL_TEXTURE_2D, texture[0]);
+	unsigned char texturePixels[]={255,0,0,255,   0,255,0,255,   255,255,0,255,   0,0,255,255};
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, texturePixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
