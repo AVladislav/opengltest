@@ -42,11 +42,10 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_OPENGLTEST));
 	GLEngine glEngine;
-	HDC hdc = GetDC(g_hWnd);
-	glEngine.Init(hdc);
+	glEngine.Init(g_hWnd);
 	// Main message loop:
 	BOOL done(FALSE);
-	glEngine.StartThread();
+	//glEngine.StartThread();
 	while (!done)
 	{
 		if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -61,10 +60,12 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 			}
 		}
 		else
-			Sleep(100);
+		{
+			glEngine.Run();
+		}
 	}
 
-	ReleaseDC(g_hWnd, hdc);
+	//ReleaseDC(g_hWnd, hdc);
 
 	return (int) msg.wParam;
 }
@@ -81,7 +82,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	WNDCLASS wc;
 
 	wc.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC;	// Redraw On Size, And Own DC For Window.
-	wc.lpfnWndProc		= (WNDPROC) WndProc;					// WndProc Handles Messages
+	wc.lpfnWndProc		= (WNDPROC) GLEngine::WndProc;					// WndProc Handles Messages
 	wc.cbClsExtra		= 0;									// No Extra Window Data
 	wc.cbWndExtra		= 0;									// No Extra Window Data
 	wc.hInstance		= hInstance;							// Set The Instance
@@ -123,7 +124,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    AdjustWindowRectEx(&WindowRect, dwStyle, FALSE, dwExStyle);		// Adjust Window To True Requested Size
 
    g_hWnd = CreateWindowEx(dwExStyle, L"OpenGL", szTitle, dwStyle,
-      0, 0, 800, 600, NULL, NULL, hInstance, NULL);
+      20, 0, 800, 600, NULL, NULL, hInstance, NULL);
 
    if (!g_hWnd)
    {
@@ -145,7 +146,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY	- post a quit message and return
 //
 //
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WndProc1(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{	
@@ -155,6 +156,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_PAINT:
 		break;
 	}
+	
 
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }

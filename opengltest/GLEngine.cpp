@@ -1,23 +1,31 @@
 #include "stdafx.h"
 #include "GLEngine.h"
 #include "boost/thread.hpp"
+#include "quaternion.h"
+
+GLEngine *g_Engine(NULL);
 
 GLEngine::GLEngine() :
 	m_hglrc(NULL),
-	m_hdc(NULL)
+	m_hdc(NULL),
+	m_hWnd(NULL)
 {
-
+	g_Engine = this;
 }
 
 GLEngine::~GLEngine()
 {
-
+	g_Engine = NULL;
+	ReleaseDC(m_hWnd,m_hdc);
 }
 
-void GLEngine::Init(HDC hdc)
+void GLEngine::Init(HWND hWnd)
 {
 	logging::add_file_log("log.txt");
-	m_hdc = hdc;
+	m_hdc = GetDC(hWnd);
+	RECT rc;
+	GetWindowRect(hWnd, &rc);
+	m_camera.SetCenter(rc.left+(rc.right-rc.left)/2,rc.top+(rc.bottom-rc.top)/2);
 
 	GLuint		PixelFormat;
 	static	PIXELFORMATDESCRIPTOR pfd=				// pfd Tells Windows How We Want Things To Be
@@ -46,14 +54,14 @@ void GLEngine::Init(HDC hdc)
 
 	BOOL res = SetPixelFormat(m_hdc, PixelFormat, &pfd);		// Are We Able To Set The Pixel Format?	
 
-	m_hglrc = wglCreateContext(hdc);
+	m_hglrc = wglCreateContext(m_hdc);
 	if(!m_hglrc)
 	{
 		BOOST_LOG_TRIVIAL(error) << "Error wglCreateContext: " << __LINE__;
 		DWORD error = GetLastError();
 	}
 
-	if(!wglMakeCurrent(hdc, m_hglrc))
+	if(!wglMakeCurrent(m_hdc, m_hglrc))
 		BOOST_LOG_TRIVIAL(error) << "Error wglMakeCurrent: " << __LINE__;
 
 	ResizeScene(800, 600);	
@@ -88,12 +96,22 @@ void GLEngine::Draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// Clear Screen And Depth Buffer
 	glLoadIdentity();									// Reset The Current Modelview Matsrix
-	glTranslatef(-1.f,0.0f,-6.f);						// Move Left 1.5 Units And Into The Screen 6.0
+
+	m_camera.CheckMouse();	
+	SetPerpective();
+	
+	glTranslatef(m_camera.x, 0, m_camera.z);
+	//gluLookAt(m_camera.x, 0, m_camera.z, eyeCX, eyeCY, eyeCZ, 0, 1, 0);
+
+	//glTranslatef(-1.f,0.0f,-6.f);						// Move Left 1.5 Units And Into The Screen 6.0	
+	
 	static GLfloat angle = 0.0;
 	glRotatef(angle, 1.0f, 1.0f, 1.0f);
 	angle+=1.0f;
-	glBindTexture(GL_TEXTURE_2D, texture[0]);
+	glEnable(GL_TEXTURE_2D);	
+	glBindTexture(GL_TEXTURE_2D, texture[0]);	
 	glBegin(GL_TRIANGLES);
+	glColor3f(1.0f,1.0f,1.0f); //white
 	glTexCoord2f(0.0f,0.0f);
 	glVertex3f( 0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.0f,1.0f);
@@ -121,8 +139,18 @@ void GLEngine::Draw()
 	glVertex3f(-1.0f,-1.0f,-1.0f); 
 	glTexCoord2f(0.0f,0.0f);
 	glVertex3f(-1.0f,-1.0f, 1.0f); 
-
 	glEnd();											// Done Drawing The Quad
+	glDisable(GL_TEXTURE_2D);
+
+	glRotatef(-angle, 1.0f, 1.0f, 1.0f);	 	
+	glBegin(GL_QUADS);		
+	glColor3f(255, 0, 0);
+	glVertex3f( -2.0f, 2.0f, -2.0f);
+	glVertex3f( 2.0f, 2.0f, -2.0f);
+	glVertex3f( 2.0f, -2.0f, -2.0f);
+	glVertex3f( -2.0f, -2.0f, -2.0f);
+	glEnd();
+
 	SwapBuffers(m_hdc);
 	DWORD err = GetLastError();
 }
@@ -151,11 +179,11 @@ void GLEngine::StartThread()
 
 void GLEngine::Run()
 {
-	while(true)
+	//while(true)
 	{
 		wglMakeCurrent(m_hdc, m_hglrc);
 		Draw();
-		Sleep(10);
+		Sleep(20);
 	}
 }
 
@@ -167,4 +195,77 @@ void GLEngine::InitTextures()
 	glTexImage2D(GL_TEXTURE_2D, 0, 3, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, texturePixels);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+
+LRESULT CALLBACK GLEngine::WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
+{
+
+	switch (message)
+	{
+	
+	case WM_CLOSE:
+		PostQuitMessage(0);
+		break;	
+	case WM_PAINT:
+		break;
+	}
+	g_Engine->ProcessMsg(hWnd, message,wParam,lParam);
+
+	return DefWindowProc(hWnd, message, wParam, lParam);
+
+}
+
+void GLEngine::ProcessMsg( HWND hWnd, UINT mes, WPARAM wParam, LPARAM lParam )
+{
+	switch(mes)
+	{		
+	case WM_KEYDOWN:
+		{
+			switch(wParam)
+			{
+			case VK_DOWN:
+				m_camera.z -= m_camera.dirz;
+				m_camera.x += m_camera.dirx;
+				break;
+			case VK_UP:
+				m_camera.z += m_camera.dirz;
+				m_camera.x -= m_camera.dirx;
+				break;
+			case VK_LEFT:
+				m_camera.z += m_camera.dirLz;
+				m_camera.x -= m_camera.dirLx;
+				break;
+			case VK_RIGHT:
+				m_camera.z -= m_camera.dirLz;
+				m_camera.x += m_camera.dirLx;
+				break;
+			}
+		}
+		break;		
+	}
+}
+
+void GLEngine::SetPerpective()
+{
+	Quaternion m_qPitch, m_qHeading;
+	m_qPitch.CreateFromAxisAngle(1.0f, 0.0f, 0.0f, m_camera.pitch);
+	m_qHeading.CreateFromAxisAngle(0.0f, 1.0f, 0.0f, m_camera.heading);
+
+	Quaternion q;
+	q = m_qPitch * m_qHeading;
+	float Matrix[16];
+	q.CreateMatrix(Matrix);
+	glMultMatrixf(Matrix);
+
+	m_qPitch.CreateMatrix(Matrix);
+	m_camera.diry = Matrix[9];
+
+	q = m_qHeading*m_qPitch;
+	q.CreateMatrix(Matrix);
+	m_camera.dirx = Matrix[8];
+	m_camera.dirz = Matrix[10];
+
+	m_camera.dirLx = -m_camera.dirz;
+	m_camera.dirLz = m_camera.dirx;
 }
