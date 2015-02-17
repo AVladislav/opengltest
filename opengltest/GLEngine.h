@@ -4,6 +4,7 @@
 #include <gl/GLU.h>
 #include <boost/log/trivial.hpp>
 #include "camera.h"
+#include "../viewOgl/ViewInterfaces.h"
 class GLEngine
 {
 public:
@@ -30,4 +31,6 @@ private:
 	HWND m_hWnd;
 	GLuint      texture[1]; 
 	Camera m_camera;
+	IViewManager *m_viewManager;
+	std::shared_ptr<IObject> m_Object;
 };

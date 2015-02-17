@@ -11,3 +11,5 @@
 *.log
 /Debug/*.*
 /Release/*.*
+*.ipch
+*.cache

@@ -2,6 +2,7 @@
 #include "GLEngine.h"
 #include "boost/thread.hpp"
 #include "quaternion.h"
+#include "../viewOgl/ViewOgl.h"
 
 GLEngine *g_Engine(NULL);
 
@@ -23,6 +24,10 @@ void GLEngine::Init(HWND hWnd)
 {
 	logging::add_file_log("log.txt");
 	m_hdc = GetDC(hWnd);
+	
+	m_viewManager = CreateManager();
+	m_Object = m_viewManager->CreateObject();
+	
 	RECT rc;
 	GetWindowRect(hWnd, &rc);
 	m_camera.SetCenter(rc.left+(rc.right-rc.left)/2,rc.top+(rc.bottom-rc.top)/2);
@@ -113,11 +118,12 @@ void GLEngine::Draw()
 	glBegin(GL_TRIANGLES);
 	glColor3f(1.0f,1.0f,1.0f); //white
 	glTexCoord2f(0.0f,0.0f);
-	glVertex3f( 0.0f, 1.0f, 0.0f);
-	glTexCoord2f(0.0f,1.0f);
-	glVertex3f(-1.0f,-1.0f, 1.0f);
-	glTexCoord2f(1.0f,0.0f);
-	glVertex3f( 1.0f,-1.0f, 1.0f);
+	//m_Object->Draw();
+// 	glVertex3f( 0.0f, 1.0f, 0.0f);
+// 	glTexCoord2f(0.0f,1.0f);
+// 	glVertex3f(-1.0f,-1.0f, 1.0f);
+// 	glTexCoord2f(1.0f,0.0f);
+// 	glVertex3f( 1.0f,-1.0f, 1.0f);
 
 	glTexCoord2f(1.0f,0.0f);
 	glVertex3f( 0.0f, 1.0f, 0.0f); 
@@ -150,7 +156,7 @@ void GLEngine::Draw()
 	glVertex3f( 2.0f, -2.0f, -2.0f);
 	glVertex3f( -2.0f, -2.0f, -2.0f);
 	glEnd();
-
+	m_Object->Draw();
 	SwapBuffers(m_hdc);
 	DWORD err = GetLastError();
 }
