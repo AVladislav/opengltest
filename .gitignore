@@ -13,3 +13,4 @@
 /Release/*.*
 *.ipch
 *.cache
+*.user
