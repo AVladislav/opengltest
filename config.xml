@@ -1,0 +1,20 @@
+<VBContent>
+  <title>SampleLobby</title>
+  <version>1.7</version>
+  <description>SampleLobby</description>
+  <contentType>Lobby</contentType>
+  <lobbyProperties>
+    <hookType>4</hookType>
+    <type>External</type>
+    <code>SampleLobby</code>
+    <supportedSkin />
+  </lobbyProperties>
+  <platformParameters>
+    <producer>Videobet</producer>
+    <commandline>lobbies/SampleLobby/SampleLobby.exe</commandline>
+    <supportedResolution>
+      <resolution>hd</resolution>
+      <resolution>sd</resolution>
+    </supportedResolution>
+  </platformParameters>
+</VBContent>
